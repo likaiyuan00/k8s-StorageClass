@@ -1,0 +1,36 @@
+# nfs-storage-class.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-data
+ 
+# 存储分配器的名称
+# 对应“nfs-client-provisioner.yaml”文件中env.PROVISIONER_NAME.value
+provisioner: nfs-name
+ 
+# 允许pvc创建后扩容
+allowVolumeExpansion: True
+ 
+parameters:
+  # 资源删除策略，“true”表示删除PVC时，同时删除绑定的PV
+  archiveOnDelete: "true"
+---
+# nfs-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  # 注意，后面Deployment申请资源需要用到此处的名称
+  name: nfs-pvc
+spec:
+  # 设置资源的访问策略，ReadWriteMany表示该卷可以被多个节点以读写模式挂载；
+  accessModes:
+    - ReadWriteMany
+ 
+  # 设置资源的class名称
+  # 注意，此处的名称必须与“nfs-storage-class.yaml”中的storageClassName相同
+  storageClassName: nfs-data
+ 
+  # 设置申请的资源大小
+  resources:
+    requests:
+      storage: 100Mi

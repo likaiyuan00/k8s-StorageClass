@@ -1,0 +1,91 @@
+
+# 表示使用Kubernetes核心API的v1版本
+apiVersion: v1
+# ServiceAccount表示这是一个服务账户资源，用于定义运行在Pod中的进程可以访问权限
+kind: ServiceAccount
+metadata:
+# 服务账户的名称
+  name: nfs-provisioner
+---
+# 表示使用基于角色的访问控制（RBAC）的v1版本
+apiVersion: rbac.authorization.k8s.io/v1
+# 表示这是一个集群角色绑定资源，用于将角色（CLusterRole）绑定到一个或多个用户或组
+kind: ClusterRoleBinding
+# 这是集群角色绑定的名称
+metadata:
+  name: nfs-provisioner-clusterrolebinding
+# 指定了要绑定的角色
+roleRef:
+# rbac.authorization.k8s.io是角色所在的API组
+  apiGroup: rbac.authorization.k8s.io
+# 表示这是一个集群级别的角色
+  kind: ClusterRole
+# cluster-admin是要绑定的角色，这里给予了nfs-provisioner服务账户非常高的权限
+  name: cluster-admin
+# 指定了绑定到这个角色用户或组
+subjects:
+# ServiceAccount表示这是一个服务账户
+- kind: ServiceAccount
+# 服务账号的名称
+  name: nfs-provisioner
+# 指定了服务账户所在的命名空间，这里是默认的命名空间
+  namespace: default
+---
+# 表示这是一个部署资源，用于管理无状态应用的Pod
+kind: Deployment
+# apps/v1表示使用应用工作负载API的v1版本
+apiVersion: apps/v1
+metadata:
+# Deployment的名字
+  name: nfs-provisioner
+# 定义了部署的规格
+spec:
+# 定义了如何识别由这个部署管理的Pod
+  selector:
+# 指定了Pod必须具有的标签
+    matchLabels:
+      app: nfs-provisioner
+# 表示Deployment将运行一个Pod副本
+  replicas: 1
+# 定义了Pod的更新策略
+  strategy:
+# 表示在更新时先删除除旧的Pod，然后创建新的Pod
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nfs-provisioner
+    # 定义Pod的规格
+    spec:
+    # nfs-provisioner指定了Pod将使用的账户
+      serviceAccount: nfs-provisioner
+      containers:
+      - name: nfs-provisioner
+    # 指定了容器的镜像，这里是一个NFS外部卷预配器的镜像
+        image: registry.cn-beijing.aliyuncs.com/mydlq/nfs-subdir-external-provisioner:v4.0.0
+        # 定义了容器内部的挂载点
+        volumeMounts: 
+        # nfs-client-root挂载卷的名字
+        - name: nfs-client-root
+        # 将卷挂载到容器内部的目录/persistentvolumes
+          mountPath: /persistentvolumes
+        # 定义了容器的环境变量
+        env:
+        # 定义了预配器的名称，这是动态卷预配的关键
+          - name: PROVISIONER_NAME
+            value: nfs-storage
+          # NFS_SERVER和NFS_PATH定义了NFS服务器的地址和路径，预配器将从中创建新的NFS持久化
+          - name: NFS_SERVER
+            value: 127.0.0.1
+          - name: NFS_PATH
+            value: /data/testnfs
+      # 定义Pod中的挂载卷
+      volumes:
+      # 卷的名字，与容器挂载点中的名字相匹配
+        - name: nfs-client-root
+        # 定义了NFS卷的类型和配置
+          nfs:
+          # server和path分别是NFS服务器的地址和路径，与环境变量中的值相同
+            server: 127.0.0.1
+            path: /data/testnfs
+
