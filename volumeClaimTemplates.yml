@@ -31,7 +31,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: nginx
-        image: nginx
+        image: registry.cn-hangzhou.aliyuncs.com/lky-deploy/nginx:1.27.5
         ports:
         - containerPort: 80
           name: web
