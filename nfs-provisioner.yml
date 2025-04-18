@@ -62,7 +62,7 @@ spec:
       containers:
       - name: nfs-provisioner
     # 指定了容器的镜像，这里是一个NFS外部卷预配器的镜像
-        image: registry.cn-beijing.aliyuncs.com/mydlq/nfs-subdir-external-provisioner:v4.0.0
+        image: registry.cn-hangzhou.aliyuncs.com/lky-deploy/nfs-provisioner:v4.0.0
         # 定义了容器内部的挂载点
         volumeMounts: 
         # nfs-client-root挂载卷的名字
